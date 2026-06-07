@@ -1,20 +1,20 @@
-import { useState } from "react"
-import { MessageSquare, FileText, Settings2 } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { ChatPage } from "@/pages/ChatPage"
-import { ProvidersPage } from "@/pages/ProvidersPage"
-import { DocumentsPage } from "@/pages/DocumentsPage"
+import { useState } from 'react';
+import { MessageSquare, FileText, Settings2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { ChatPage } from '@/pages/ChatPage';
+import { ProvidersPage } from '@/pages/ProvidersPage';
+import { DocumentsPage } from '@/pages/DocumentsPage';
 
-type Page = "chat" | "documents" | "providers"
+type Page = 'chat' | 'documents' | 'providers';
 
 const nav: { id: Page; label: string; icon: typeof MessageSquare }[] = [
-  { id: "chat", label: "Chat", icon: MessageSquare },
-  { id: "documents", label: "Documents", icon: FileText },
-  { id: "providers", label: "LLM Providers", icon: Settings2 },
-]
+  { id: 'chat', label: 'Chat', icon: MessageSquare },
+  { id: 'documents', label: 'Documents', icon: FileText },
+  { id: 'providers', label: 'LLM Providers', icon: Settings2 },
+];
 
 export default function App() {
-  const [page, setPage] = useState<Page>("chat")
+  const [page, setPage] = useState<Page>('chat');
 
   return (
     <div className="flex h-screen bg-zinc-950 text-zinc-100 overflow-hidden">
@@ -29,10 +29,10 @@ export default function App() {
               key={id}
               onClick={() => setPage(id)}
               className={cn(
-                "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors text-left",
+                'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors text-left',
                 page === id
-                  ? "bg-zinc-800 text-zinc-100 font-medium"
-                  : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
+                  ? 'bg-zinc-800 text-zinc-100 font-medium'
+                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50',
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
@@ -50,18 +50,18 @@ export default function App() {
 
       {/* Main content */}
       <main className="flex-1 min-w-0 overflow-hidden flex flex-col">
-        {page === "chat" && <ChatPage />}
-        {page === "documents" && (
+        {page === 'chat' && <ChatPage />}
+        {page === 'documents' && (
           <div className="flex-1 overflow-auto">
             <DocumentsPage />
           </div>
         )}
-        {page === "providers" && (
+        {page === 'providers' && (
           <div className="flex-1 overflow-auto">
             <ProvidersPage />
           </div>
         )}
       </main>
     </div>
-  )
+  );
 }
