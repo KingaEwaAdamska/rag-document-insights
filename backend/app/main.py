@@ -20,3 +20,8 @@ async def root():
 @app.post("/items/")
 async def create_item(item: Item):
     return item
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
