@@ -23,6 +23,7 @@ def get_document(document_id: str, db: Session = Depends(get_db)):
     return doc
 
 
+# TODO: handle file uploads and storage properly - add celery worker for indexing and cleaning up old files etc
 @router.post("", response_model=DocumentResponse, status_code=201)
 def create_document(body: DocumentCreate, db: Session = Depends(get_db)):
     stored_name = f"{uuid.uuid4()}_{body.original_filename}"
