@@ -1,5 +1,6 @@
 import uuid
 from pathlib import Path
+import os
 import shutil
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
@@ -58,7 +59,21 @@ def create_document(
 @router.delete("/{document_id}", status_code=204)
 def delete_document(document_id: str, db: Session = Depends(get_db)):
     doc = db.query(Document).filter(Document.id == document_id).first()
+
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
+
+    try:
+        if doc.file_path and os.path.exists(doc.file_path):
+            os.remove(doc.file_path)
+    except Exception as e:
+        # możesz też logować zamiast failować request
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete file from disk: {str(e)}",
+        )
+
     db.delete(doc)
     db.commit()
+
+    return None

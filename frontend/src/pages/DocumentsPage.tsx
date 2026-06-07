@@ -1,8 +1,9 @@
 import { api } from '@/lib/api';
 import { useEffect, useRef, useState } from 'react';
-import { FileUp, FileText } from 'lucide-react';
+import { FileUp, FileText, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
 type Document = {
   id: string;
   original_filename: string;
@@ -11,21 +12,20 @@ type Document = {
 };
 
 async function uploadDocument(file: File) {
-  const formData = new FormData();
-  formData.append('file', file);
-  var data = await api.documents.upload(file);
+  const data = await api.documents.upload(file);
   console.log(data);
   return data;
 }
 
 async function fetchDocuments() {
-  const data = await api.documents.list();
-  return data;
+  return await api.documents.list();
 }
 
 export function DocumentsPage() {
   const [dragging, setDragging] = useState(false);
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [pendingDelete, setPendingDelete] = useState<Document | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -38,6 +38,17 @@ export function DocumentsPage() {
       setDocuments((prev) => [doc, ...prev]);
     } catch (e) {
       console.error(e);
+    }
+  }
+
+  async function handleDelete(doc: Document) {
+    try {
+      await api.documents.delete(doc.id);
+      setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setPendingDelete(null);
     }
   }
 
@@ -91,7 +102,7 @@ export function DocumentsPage() {
           </div>
         </div>
 
-        <p className="font-medium text-zinc-300 mb-1">Drag &amp; drop files here</p>
+        <p className="font-medium text-zinc-300 mb-1">Drag & drop files here</p>
         <p className="text-sm text-zinc-600 mb-5">PDF, DOCX, and Markdown supported</p>
 
         <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
@@ -119,11 +130,43 @@ export function DocumentsPage() {
                   <p className="text-sm text-zinc-200">{doc.original_filename}</p>
                   <p className="text-xs text-zinc-600">{doc.mime_type}</p>
                 </div>
+
+                <button
+                  onClick={() => setPendingDelete(doc)}
+                  className="p-2 rounded-md hover:bg-zinc-800 transition"
+                  title="Delete document"
+                >
+                  <Trash2 className="h-4 w-4 text-zinc-500 hover:text-red-400" />
+                </button>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Confirm modal */}
+      {pendingDelete && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 w-[360px]">
+            <p className="text-zinc-200 text-sm mb-4">
+              Delete <span className="font-medium">{pendingDelete.original_filename}</span>?
+            </p>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setPendingDelete(null)}>
+                Cancel
+              </Button>
+
+              <Button
+                onClick={() => handleDelete(pendingDelete)}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
