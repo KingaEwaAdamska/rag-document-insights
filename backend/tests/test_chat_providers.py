@@ -1,6 +1,5 @@
-from app.services.provider_resolver import validate_provider, LLMProviderConfig
+from app.services.provider_resolver import validate_provider, LLMProviderConfig, build_llm, RuntimeProvider
 from app.models.llm_provider import LLMProvider
-from app.api.chat import build_llm, RuntimeProvider
 
 
 def test_validate_provider_gemini():

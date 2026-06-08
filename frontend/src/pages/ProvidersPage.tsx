@@ -86,10 +86,17 @@ export function ProvidersPage() {
 
   async function handleActivate(id: string) {
     try {
-      await api.providers.activate(id);
+      const res = await api.providers.activate(id);
+
+      if (!res.success) {
+        setError(res.message);
+        return;
+      }
+
+      setError(null);
       void load();
-    } catch {
-      setError('Failed to activate provider');
+    } catch (err: any) {
+      setError(err?.response?.data?.detail ?? err?.message ?? 'Failed to activate provider');
     }
   }
 

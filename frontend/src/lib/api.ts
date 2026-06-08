@@ -21,6 +21,11 @@ export interface LLMProviderCreate {
   base_url?: string;
 }
 
+export interface ActivateProviderResponse {
+  success: boolean;
+  message: string;
+}
+
 export interface Document {
   id: string;
   original_filename: string;
@@ -67,8 +72,8 @@ export const api = {
         body: JSON.stringify(data),
       }),
     activate: (id: string) =>
-      request<LLMProviderConfig>(`/api/v1/llm-providers/${id}/activate`, {
-        method: 'PATCH',
+      request<ActivateProviderResponse>(`/api/v1/llm-providers/${id}/activate`, {
+        method: 'POST',
       }),
     delete: (id: string) => request<void>(`/api/v1/llm-providers/${id}`, { method: 'DELETE' }),
   },
