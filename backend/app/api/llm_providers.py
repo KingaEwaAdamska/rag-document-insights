@@ -20,12 +20,16 @@ def _fernet() -> Fernet:
 
 @router.get("", response_model=list[LLMProviderResponse])
 def list_providers(db: Session = Depends(get_db)):
-    return db.query(LLMProviderConfig).order_by(LLMProviderConfig.created_at.desc()).all()
+    return (
+        db.query(LLMProviderConfig).order_by(LLMProviderConfig.created_at.desc()).all()
+    )
 
 
 @router.get("/{provider_id}", response_model=LLMProviderResponse)
 def get_provider(provider_id: str, db: Session = Depends(get_db)):
-    cfg = db.query(LLMProviderConfig).filter(LLMProviderConfig.id == provider_id).first()
+    cfg = (
+        db.query(LLMProviderConfig).filter(LLMProviderConfig.id == provider_id).first()
+    )
     if not cfg:
         raise HTTPException(status_code=404, detail="Provider not found")
     return cfg
@@ -33,26 +37,40 @@ def get_provider(provider_id: str, db: Session = Depends(get_db)):
 
 @router.post("", response_model=LLMProviderResponse, status_code=201)
 def create_provider(body: LLMProviderCreate, db: Session = Depends(get_db)):
-    encrypted_key = None
-    if body.api_key:
-        encrypted_key = _fernet().encrypt(body.api_key.encode()).decode()
+    try:
+        print("CREATE PROVIDER BODY:", body.dict())
+        print("SECRET KEY:", os.getenv("SECRET_KEY"))
 
-    cfg = LLMProviderConfig(
-        name=body.name,
-        provider=body.provider,
-        model=body.model,
-        api_key_encrypted=encrypted_key,
-        base_url=body.base_url,
-    )
-    db.add(cfg)
-    db.commit()
-    db.refresh(cfg)
-    return cfg
+        encrypted_key = None
+        if body.api_key:
+            encrypted_key = _fernet().encrypt(body.api_key.encode()).decode()
+
+        cfg = LLMProviderConfig(
+            name=body.name,
+            provider=body.provider,
+            model=body.model,
+            api_key_encrypted=encrypted_key,
+            base_url=body.base_url,
+        )
+
+        db.add(cfg)
+        db.commit()
+        db.refresh(cfg)
+
+        return cfg
+
+    except Exception as e:
+        import traceback
+
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.patch("/{provider_id}/activate", response_model=LLMProviderResponse)
 def activate_provider(provider_id: str, db: Session = Depends(get_db)):
-    cfg = db.query(LLMProviderConfig).filter(LLMProviderConfig.id == provider_id).first()
+    cfg = (
+        db.query(LLMProviderConfig).filter(LLMProviderConfig.id == provider_id).first()
+    )
     if not cfg:
         raise HTTPException(status_code=404, detail="Provider not found")
 
@@ -66,7 +84,9 @@ def activate_provider(provider_id: str, db: Session = Depends(get_db)):
 
 @router.delete("/{provider_id}", status_code=204)
 def delete_provider(provider_id: str, db: Session = Depends(get_db)):
-    cfg = db.query(LLMProviderConfig).filter(LLMProviderConfig.id == provider_id).first()
+    cfg = (
+        db.query(LLMProviderConfig).filter(LLMProviderConfig.id == provider_id).first()
+    )
     if not cfg:
         raise HTTPException(status_code=404, detail="Provider not found")
     db.delete(cfg)

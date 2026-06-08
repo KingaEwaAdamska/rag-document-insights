@@ -22,7 +22,10 @@ class LLMProviderConfig(TimestampMixin, Base):
     )
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    provider: Mapped[LLMProvider] = mapped_column(Enum(LLMProvider), nullable=False)
+    provider: Mapped[LLMProvider] = mapped_column(
+        Enum(LLMProvider, native_enum=False),
+        nullable=False,
+    )
     model: Mapped[str] = mapped_column(String(255), nullable=False)
 
     api_key_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
