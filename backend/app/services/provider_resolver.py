@@ -1,7 +1,15 @@
+from fastapi import HTTPException
 import enum
+import os
 from pydantic import BaseModel
 from app.models.llm_provider import LLMProviderConfig
-from app.api.llm_providers import _fernet
+from app.services.crypto import get_fernet
+
+
+from langchain_openai import ChatOpenAI
+from langchain_anthropic import ChatAnthropic
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_ollama import ChatOllama
 
 
 class RuntimeProvider(BaseModel):
@@ -15,7 +23,7 @@ class RuntimeProvider(BaseModel):
 def decrypt_api_key(encrypted: str | None) -> str | None:
     if not encrypted:
         return None
-    return _fernet().decrypt(encrypted.encode()).decode()
+    return get_fernet().decrypt(encrypted.encode()).decode()
 
 
 def resolve_runtime_provider(cfg: LLMProviderConfig) -> RuntimeProvider:
@@ -41,3 +49,44 @@ def normalize_provider(cfg: LLMProviderConfig) -> str:
         return cfg.provider.value
     return str(cfg.provider).lower()
 
+
+def build_llm(runtime):
+    if runtime.provider == "ollama":
+        return ChatOllama(
+            model=runtime.model,
+            base_url=runtime.base_url or "http://localhost:11434",
+            temperature=0.7,
+        )
+
+    if not runtime.api_key:
+        return ChatOpenAI(
+            model="gpt-4o-mini",
+            api_key=os.getenv("OPENAI_FALLBACK_KEY"),
+        )
+
+    if runtime.provider in ["openai", "openrouter"]:
+        return ChatOpenAI(
+            model=runtime.model,
+            api_key=runtime.api_key,
+            base_url=runtime.base_url if runtime.provider == "openrouter" else None,
+            temperature=0.7,
+        )
+
+    if runtime.provider == "anthropic":
+        return ChatAnthropic(
+            model=runtime.model,
+            api_key=runtime.api_key,
+            temperature=0.7,
+        )
+
+    if runtime.provider == "gemini":
+        return ChatGoogleGenerativeAI(
+            model=runtime.model,
+            google_api_key=runtime.api_key,
+            temperature=0.7,
+        )
+
+    raise HTTPException(
+        status_code=400,
+        detail=f"Unsupported provider: {runtime.provider}",
+    )
