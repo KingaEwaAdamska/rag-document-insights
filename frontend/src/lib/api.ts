@@ -1,8 +1,6 @@
-const BASE_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) ??
-  "http://localhost:8000";
+const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8000';
 
-export type LLMProvider = "anthropic" | "openai" | "ollama" | "gemini";
+export type LLMProvider = 'anthropic' | 'openai' | 'ollama' | 'gemini';
 
 export interface LLMProviderConfig {
   id: string;
@@ -29,7 +27,7 @@ export interface Document {
   stored_filename: string;
   file_size: number;
   mime_type: string;
-  status: "pending" | "indexing" | "indexed" | "failed";
+  status: 'pending' | 'indexing' | 'indexed' | 'failed';
   error_message: string | null;
   chunk_count: number | null;
   is_stale: boolean;
@@ -37,16 +35,24 @@ export interface Document {
   updated_at: string;
 }
 
+export interface ChatRequest {
+  message: string;
+  provider_id?: string;
+}
+
+export interface ChatResponse {
+  content: string;
+  components?: any[];
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json", ...options?.headers },
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
     ...options,
   });
   if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(
-      `${res.status} ${res.statusText}${body ? `: ${body}` : ""}`,
-    );
+    const body = await res.text().catch(() => '');
+    throw new Error(`${res.status} ${res.statusText}${body ? `: ${body}` : ''}`);
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
@@ -54,41 +60,44 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
 export const api = {
   providers: {
-    list: () => request<LLMProviderConfig[]>("/api/v1/llm-providers"),
+    list: () => request<LLMProviderConfig[]>('/api/v1/llm-providers'),
     create: (data: LLMProviderCreate) =>
-      request<LLMProviderConfig>("/api/v1/llm-providers", {
-        method: "POST",
+      request<LLMProviderConfig>('/api/v1/llm-providers', {
+        method: 'POST',
         body: JSON.stringify(data),
       }),
     activate: (id: string) =>
       request<LLMProviderConfig>(`/api/v1/llm-providers/${id}/activate`, {
-        method: "PATCH",
+        method: 'PATCH',
       }),
-    delete: (id: string) =>
-      request<void>(`/api/v1/llm-providers/${id}`, { method: "DELETE" }),
+    delete: (id: string) => request<void>(`/api/v1/llm-providers/${id}`, { method: 'DELETE' }),
+  },
+  chat: {
+    send: (body: ChatRequest) =>
+      request<ChatResponse>('/api/v1/chat', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
   },
   documents: {
     upload: async (file: File): Promise<Document> => {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append('file', file);
 
       const res = await fetch(`${BASE_URL}/api/v1/documents`, {
-        method: "POST",
+        method: 'POST',
         body: formData,
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(
-          `${res.status} ${res.statusText}: ${JSON.stringify(data)}`,
-        );
+        throw new Error(`${res.status} ${res.statusText}: ${JSON.stringify(data)}`);
       }
 
       return data;
     },
-    list: () => request<Document[]>("/api/v1/documents"),
-    delete: (id: string) =>
-      request<void>(`/api/v1/documents/${id}`, { method: "DELETE" }),
+    list: () => request<Document[]>('/api/v1/documents'),
+    delete: (id: string) => request<void>(`/api/v1/documents/${id}`, { method: 'DELETE' }),
   },
 };
