@@ -1,71 +1,71 @@
-import { useState, useEffect, useCallback } from "react"
-import { Plus, Trash2, Zap } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { api, type LLMProviderConfig, type LLMProvider } from "@/lib/api"
+import { useState, useEffect, useCallback } from 'react';
+import { Plus, Trash2, Zap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { api, type LLMProviderConfig, type LLMProvider } from '@/lib/api';
 
 const PROVIDER_LABELS: Record<LLMProvider, string> = {
-  anthropic: "Anthropic",
-  openai: "OpenAI",
-  ollama: "Ollama",
-  gemini: "Gemini",
-}
+  anthropic: 'Anthropic',
+  openai: 'OpenAI',
+  ollama: 'Ollama',
+  gemini: 'Gemini',
+};
 
 const PROVIDER_COLORS: Record<LLMProvider, string> = {
-  anthropic: "bg-purple-950 text-purple-400 border border-purple-900",
-  openai: "bg-emerald-950 text-emerald-400 border border-emerald-900",
-  ollama: "bg-orange-950 text-orange-400 border border-orange-900",
-  gemini: "bg-blue-950 text-blue-400 border border-blue-900",
-}
+  anthropic: 'bg-purple-950 text-purple-400 border border-purple-900',
+  openai: 'bg-emerald-950 text-emerald-400 border border-emerald-900',
+  ollama: 'bg-orange-950 text-orange-400 border border-orange-900',
+  gemini: 'bg-blue-950 text-blue-400 border border-blue-900',
+};
 
 const DEFAULT_MODELS: Record<LLMProvider, string> = {
-  anthropic: "claude-sonnet-4-5",
-  openai: "gpt-4o",
-  ollama: "llama3.2",
-  gemini: "gemini-1.5-pro",
-}
+  anthropic: 'claude-sonnet-4-5',
+  openai: 'gpt-4o',
+  ollama: 'llama3.2',
+  gemini: 'gemini-1.5-pro',
+};
 
 const EMPTY_FORM = {
-  name: "",
-  provider: "anthropic" as LLMProvider,
+  name: '',
+  provider: 'anthropic' as LLMProvider,
   model: DEFAULT_MODELS.anthropic,
-  api_key: "",
-  base_url: "",
-}
+  api_key: '',
+  base_url: '',
+};
 
 export function ProvidersPage() {
-  const [providers, setProviders] = useState<LLMProviderConfig[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [open, setOpen] = useState(false)
-  const [form, setForm] = useState(EMPTY_FORM)
-  const [saving, setSaving] = useState(false)
+  const [providers, setProviders] = useState<LLMProviderConfig[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      setProviders(await api.providers.list())
-      setError(null)
+      setProviders(await api.providers.list());
+      setError(null);
     } catch {
-      setError("Could not reach the backend. Is it running on :8000?")
+      setError('Could not reach the backend. Is it running on :8000?');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    void load()
-  }, [load])
+    void load();
+  }, [load]);
 
   function handleProviderChange(provider: LLMProvider) {
-    setForm((f) => ({ ...f, provider, model: DEFAULT_MODELS[provider] }))
+    setForm((f) => ({ ...f, provider, model: DEFAULT_MODELS[provider] }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setSaving(true)
+    e.preventDefault();
+    setSaving(true);
     try {
       await api.providers.create({
         name: form.name,
@@ -73,32 +73,32 @@ export function ProvidersPage() {
         model: form.model,
         api_key: form.api_key || undefined,
         base_url: form.base_url || undefined,
-      })
-      setOpen(false)
-      setForm(EMPTY_FORM)
-      void load()
+      });
+      setOpen(false);
+      setForm(EMPTY_FORM);
+      void load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create provider")
+      setError(err instanceof Error ? err.message : 'Failed to create provider');
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
   }
 
   async function handleActivate(id: string) {
     try {
-      await api.providers.activate(id)
-      void load()
+      await api.providers.activate(id);
+      void load();
     } catch {
-      setError("Failed to activate provider")
+      setError('Failed to activate provider');
     }
   }
 
   async function handleDelete(id: string) {
     try {
-      await api.providers.delete(id)
-      void load()
+      await api.providers.delete(id);
+      void load();
     } catch {
-      setError("Failed to delete provider")
+      setError('Failed to delete provider');
     }
   }
 
@@ -128,15 +128,14 @@ export function ProvidersPage() {
       ) : providers.length === 0 ? (
         <div className="text-center py-24">
           <p className="font-medium text-zinc-400 mb-1">No providers configured</p>
-          <p className="text-sm text-zinc-600">Add a provider to start chatting with your documents.</p>
+          <p className="text-sm text-zinc-600">
+            Add a provider to start chatting with your documents.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {providers.map((p) => (
-            <Card
-              key={p.id}
-              className={p.is_active ? "border-zinc-600 ring-1 ring-zinc-700" : ""}
-            >
+            <Card key={p.id} className={p.is_active ? 'border-zinc-600 ring-1 ring-zinc-700' : ''}>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="text-sm">{p.name}</CardTitle>
@@ -219,11 +218,10 @@ export function ProvidersPage() {
               />
             </div>
 
-            {form.provider !== "ollama" && (
+            {form.provider !== 'ollama' && (
               <div className="space-y-1.5">
                 <Label htmlFor="api_key">
-                  API Key{" "}
-                  <span className="text-zinc-600 font-normal">(optional)</span>
+                  API Key <span className="text-zinc-600 font-normal">(optional)</span>
                 </Label>
                 <Input
                   id="api_key"
@@ -235,11 +233,10 @@ export function ProvidersPage() {
               </div>
             )}
 
-            {form.provider === "ollama" && (
+            {form.provider === 'ollama' && (
               <div className="space-y-1.5">
                 <Label htmlFor="base_url">
-                  Base URL{" "}
-                  <span className="text-zinc-600 font-normal">(optional)</span>
+                  Base URL <span className="text-zinc-600 font-normal">(optional)</span>
                 </Label>
                 <Input
                   id="base_url"
@@ -255,12 +252,12 @@ export function ProvidersPage() {
                 Cancel
               </Button>
               <Button type="submit" disabled={saving}>
-                {saving ? "Saving…" : "Add Provider"}
+                {saving ? 'Saving…' : 'Add Provider'}
               </Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
