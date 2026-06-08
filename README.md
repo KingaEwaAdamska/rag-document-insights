@@ -28,7 +28,7 @@ cp ../.env.example ../.env
 # python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 
 alembic upgrade head       # creates data/app.db
-py app/main.py             # runs on http://localhost:8000
+python app/main.py             # runs on http://localhost:8000
 ```
 
 Swagger UI: `http://localhost:8000/docs`
