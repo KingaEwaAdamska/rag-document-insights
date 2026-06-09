@@ -54,9 +54,10 @@ def test_chat_success(mock_stream_llm, mock_rag, client: TestClient):
             if data:
                 events.append(json.loads(data))
     
-    assert events[0]["content"] == "Hello "
-    assert events[1]["content"] == "from AI"
-    assert events[2]["components"][0]["type"] == "suggestion_chips"
+    assert "conversation_id" in events[0]
+    assert events[1]["content"] == "Hello "
+    assert events[2]["content"] == "from AI"
+    assert events[3]["components"][0]["type"] == "suggestion_chips"
 
 @patch("app.services.chat.run_rag")
 @patch("app.services.chat.stream_llm")
