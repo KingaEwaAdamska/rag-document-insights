@@ -12,6 +12,8 @@ class LLMProvider(str, enum.Enum):
     OPENAI = "openai"
     OLLAMA = "ollama"
     GEMINI = "gemini"
+    OPENROUTER = "openrouter"
+    CUSTOM = "custom"
 
 
 class LLMProviderConfig(TimestampMixin, Base):

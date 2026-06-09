@@ -55,7 +55,7 @@ def build_llm(runtime):
         return ChatOllama(
             model=runtime.model,
             base_url=runtime.base_url or "http://localhost:11434",
-            temperature=0.7,
+            temperature=0,
         )
 
     if not runtime.api_key:
@@ -69,21 +69,29 @@ def build_llm(runtime):
             model=runtime.model,
             api_key=runtime.api_key,
             base_url=runtime.base_url if runtime.provider == "openrouter" else None,
-            temperature=0.7,
+            temperature=0,
         )
 
     if runtime.provider == "anthropic":
         return ChatAnthropic(
             model=runtime.model,
             api_key=runtime.api_key,
-            temperature=0.7,
+            temperature=0,
         )
 
     if runtime.provider == "gemini":
         return ChatGoogleGenerativeAI(
             model=runtime.model,
             google_api_key=runtime.api_key,
-            temperature=0.7,
+            temperature=0,
+        )
+
+    if runtime.provider == "custom":
+        return ChatOpenAI(
+            model=runtime.model,
+            api_key=runtime.api_key,
+            base_url=runtime.base_url,
+            temperature=0,
         )
 
     raise HTTPException(

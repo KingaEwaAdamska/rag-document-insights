@@ -1,6 +1,6 @@
 const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8000';
 
-export type LLMProvider = 'anthropic' | 'openai' | 'ollama' | 'gemini';
+export type LLMProvider = 'anthropic' | 'openai' | 'ollama' | 'gemini' | 'openrouter' | 'custom';
 
 export interface LLMProviderConfig {
   id: string;
@@ -43,11 +43,45 @@ export interface Document {
 export interface ChatRequest {
   message: string;
   provider_id?: string;
+  conversation_id?: string;
 }
+
+export interface SuggestionChips {
+  type: 'suggestion_chips';
+  chips: string[];
+}
+
+export interface Citation {
+  title: string;
+  excerpt: string;
+}
+
+export interface CitationGroup {
+  type: 'citation_group';
+  citations: Citation[];
+}
+
+export interface ActionButton {
+  label: string;
+  primary?: boolean;
+}
+
+export interface ActionButtons {
+  type: 'action_buttons';
+  buttons: ActionButton[];
+}
+
+export interface CodeBlock {
+  type: 'code_block';
+  language: string;
+  code: string;
+}
+
+export type UIComponent = SuggestionChips | CitationGroup | ActionButtons | CodeBlock;
 
 export interface ChatResponse {
   content: string;
-  components?: any[];
+  components?: UIComponent[];
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -79,8 +113,9 @@ export const api = {
   },
   chat: {
     send: (body: ChatRequest) =>
-      request<ChatResponse>('/api/v1/chat', {
+      fetch(`${BASE_URL}/api/v1/chat`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       }),
   },

@@ -1,7 +1,6 @@
 import os
 import traceback
 
-from cryptography.fernet import Fernet
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -9,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models.llm_provider import LLMProviderConfig
 from app.schemas.llm_provider import LLMProviderCreate, LLMProviderResponse
+from app.services.crypto import get_fernet
 
 from app.services.provider_resolver import (
     resolve_runtime_provider,
@@ -22,13 +22,6 @@ router = APIRouter(prefix="/llm-providers", tags=["llm-providers"])
 class ActivateProviderResponse(BaseModel):
     success: bool
     message: str
-
-
-def _fernet() -> Fernet:
-    key = os.getenv("SECRET_KEY")
-    if not key:
-        raise HTTPException(status_code=500, detail="SECRET_KEY is not configured")
-    return Fernet(key.encode())
 
 
 def test_provider_connection(runtime) -> tuple[bool, str]:
@@ -78,7 +71,7 @@ def create_provider(body: LLMProviderCreate, db: Session = Depends(get_db)):
         encrypted_key = None
 
         if body.api_key:
-            encrypted_key = _fernet().encrypt(body.api_key.encode()).decode()
+            encrypted_key = get_fernet().encrypt(body.api_key.encode()).decode()
 
         cfg = LLMProviderConfig(
             name=body.name,

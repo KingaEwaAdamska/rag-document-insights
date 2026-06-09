@@ -1,34 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Shuffle, FileText, Copy, Check, Bot, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { api, type LLMProviderConfig } from '@/lib/api';
-
-// ── Types ──────────────────────────────────────────────────────────────────
+import { api, type LLMProviderConfig, type UIComponent } from '@/lib/api';
 
 type Role = 'user' | 'assistant';
-
-interface SuggestionChips {
-  type: 'suggestion_chips';
-  chips: string[];
-}
-
-interface CitationGroup {
-  type: 'citation_group';
-  citations: { title: string; excerpt: string }[];
-}
-
-interface ActionButtons {
-  type: 'action_buttons';
-  buttons: { label: string; primary?: boolean }[];
-}
-
-interface CodeBlock {
-  type: 'code_block';
-  language: string;
-  code: string;
-}
-
-type UIComponent = SuggestionChips | CitationGroup | ActionButtons | CodeBlock;
 
 interface Message {
   id: string;
@@ -37,8 +12,6 @@ interface Message {
   components?: UIComponent[];
   streaming?: boolean;
 }
-
-// ── Helpers ────────────────────────────────────────────────────────────────
 
 function uid() {
   return Math.random().toString(36).slice(2);
@@ -62,8 +35,6 @@ function renderContent(text: string) {
     );
   });
 }
-
-// ── UI Blocks ──────────────────────────────────────────────────────────────
 
 function SuggestionChipsBlock({
   chips,
@@ -218,6 +189,7 @@ export function ChatPage() {
 
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
+  const [conversationId, setConversationId] = useState<string | undefined>();
 
   const [providers, setProviders] = useState<LLMProviderConfig[]>([]);
   const [selectedProviderId, setSelectedProviderId] = useState('');
@@ -247,47 +219,98 @@ export function ChatPage() {
     el.style.height = Math.min(el.scrollHeight, 160) + 'px';
   }, [input]);
 
-  // ── SEND MESSAGE (REAL API) ─────────────────────────────────────────────
   const sendMessage = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
       if (!trimmed || typing) return;
 
       setInput('');
-
-      setMessages((prev) => [...prev, { id: uid(), role: 'user', content: trimmed }]);
+      const userMessageId = uid();
+      setMessages((prev) => [...prev, { id: userMessageId, role: 'user', content: trimmed }]);
 
       setTyping(true);
 
+      const assistantMessageId = uid();
+      setMessages((prev) => [
+        ...prev,
+        { id: assistantMessageId, role: 'assistant', content: '', streaming: true },
+      ]);
+
       try {
-        const res = await api.chat.send({
+        const response = await api.chat.send({
           message: trimmed,
           provider_id: selectedProviderId || undefined,
+          conversation_id: conversationId,
         });
 
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: uid(),
-            role: 'assistant',
-            content: res.content,
-            components: res.components ?? [],
-          },
-        ]);
+        if (!response.ok) throw new Error('Failed to send message');
+
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error('No reader');
+
+        const decoder = new TextDecoder();
+        let fullContent = '';
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (trimmedLine.startsWith('data: ')) {
+              const data = trimmedLine.slice(6).trim();
+              if (data === '[DONE]') break;
+              if (!data) continue;
+
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.conversation_id) {
+                  setConversationId(parsed.conversation_id);
+                }
+                if (parsed.content) {
+                  fullContent += parsed.content;
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === assistantMessageId ? { ...m, content: fullContent } : m,
+                    ),
+                  );
+                }
+                if (parsed.components) {
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === assistantMessageId ? { ...m, components: parsed.components } : m,
+                    ),
+                  );
+                }
+              } catch (e) {
+                console.error('Error parsing SSE data', e);
+              }
+            }
+          }
+        }
+
+        setMessages((prev) =>
+          prev.map((m) => (m.id === assistantMessageId ? { ...m, streaming: false } : m)),
+        );
       } catch (e) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: uid(),
-            role: 'assistant',
-            content: '❌ Error: cannot reach backend (FastAPI).',
-          },
-        ]);
+        console.error(e);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMessageId
+              ? { ...m, content: '❌ Error: cannot reach backend (FastAPI).', streaming: false }
+              : m,
+          ),
+        );
       } finally {
         setTyping(false);
       }
     },
-    [typing, selectedProviderId],
+    [typing, selectedProviderId, conversationId],
   );
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -296,8 +319,6 @@ export function ChatPage() {
       void sendMessage(input);
     }
   }
-
-  // ── UI ────────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col h-full">
