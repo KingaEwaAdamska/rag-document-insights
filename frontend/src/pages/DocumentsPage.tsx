@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn, formatFileSize } from '@/lib/utils';
 
 const STATUS_META: Record<
@@ -43,6 +44,7 @@ export function DocumentsPage() {
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Document | null>(null);
   const [reindexingIds, setReindexingIds] = useState<Set<string>>(new Set());
+  const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -202,7 +204,8 @@ export function DocumentsPage() {
             {documents.map((doc) => (
               <div
                 key={doc.id}
-                className="flex items-center justify-between gap-4 rounded-lg border border-zinc-800 bg-zinc-900/30 p-3"
+                onClick={() => setSelectedDoc(doc)}
+                className="flex items-center justify-between gap-4 rounded-lg border border-zinc-800 bg-zinc-900/30 p-3 cursor-pointer hover:border-zinc-700 transition"
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -232,7 +235,10 @@ export function DocumentsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => void handleReindex(doc)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void handleReindex(doc);
+                      }}
                       disabled={reindexingIds.has(doc.id) || doc.status === 'indexing'}
                     >
                       <RefreshCw
@@ -243,7 +249,10 @@ export function DocumentsPage() {
                   )}
 
                   <button
-                    onClick={() => setPendingDelete(doc)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPendingDelete(doc);
+                    }}
                     className="p-2 rounded-md hover:bg-zinc-800 transition"
                     title="Delete document"
                   >
@@ -255,6 +264,63 @@ export function DocumentsPage() {
           </div>
         )}
       </div>
+
+      {/* Detail dialog */}
+      <Dialog open={!!selectedDoc} onOpenChange={(open) => !open && setSelectedDoc(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="truncate">{selectedDoc?.original_filename}</DialogTitle>
+          </DialogHeader>
+          {selectedDoc && (
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center gap-2">
+                <StatusBadge status={selectedDoc.status} />
+                {selectedDoc.is_stale && (
+                  <Badge variant="secondary" className="gap-1 text-amber-400 border border-amber-900 bg-amber-950">
+                    Needs reindex
+                  </Badge>
+                )}
+              </div>
+
+              <dl className="grid grid-cols-[120px_1fr] gap-x-3 gap-y-1.5 text-xs">
+                <dt className="text-zinc-500">ID</dt>
+                <dd className="text-zinc-300 font-mono truncate" title={selectedDoc.id}>{selectedDoc.id}</dd>
+
+                <dt className="text-zinc-500">Stored as</dt>
+                <dd className="text-zinc-300 font-mono truncate" title={selectedDoc.stored_filename}>{selectedDoc.stored_filename}</dd>
+
+                <dt className="text-zinc-500">File path</dt>
+                <dd className="text-zinc-300 font-mono truncate" title={selectedDoc.file_path}>{selectedDoc.file_path}</dd>
+
+                <dt className="text-zinc-500">File size</dt>
+                <dd className="text-zinc-300">{formatFileSize(selectedDoc.file_size)}</dd>
+
+                <dt className="text-zinc-500">MIME type</dt>
+                <dd className="text-zinc-300">{selectedDoc.mime_type}</dd>
+
+                <dt className="text-zinc-500">Chunks</dt>
+                <dd className="text-zinc-300">{selectedDoc.chunk_count ?? '—'}</dd>
+
+                <dt className="text-zinc-500">Chunk size</dt>
+                <dd className="text-zinc-300">{selectedDoc.chunk_size ?? '—'}</dd>
+
+                <dt className="text-zinc-500">Chunk overlap</dt>
+                <dd className="text-zinc-300">{selectedDoc.chunk_overlap ?? '—'}</dd>
+
+                <dt className="text-zinc-500">Created</dt>
+                <dd className="text-zinc-300">{new Date(selectedDoc.created_at).toLocaleString()}</dd>
+
+                <dt className="text-zinc-500">Updated</dt>
+                <dd className="text-zinc-300">{new Date(selectedDoc.updated_at).toLocaleString()}</dd>
+              </dl>
+
+              {selectedDoc.status === 'failed' && selectedDoc.error_message && (
+                <p className="text-xs text-red-400">{selectedDoc.error_message}</p>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Confirm modal */}
       {pendingDelete && (

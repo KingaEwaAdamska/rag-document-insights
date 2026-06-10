@@ -56,3 +56,26 @@ def add_chunks(
 def delete_chunks(document_id: str) -> None:
     collection = get_collection()
     collection.delete(where={"document_id": document_id})
+
+
+def similarity_search(query_embedding: list[float], k: int = 4) -> list[dict]:
+    collection = get_collection()
+    results = collection.query(query_embeddings=[query_embedding], n_results=k)
+
+    ids = results.get("ids", [[]])[0]
+    if not ids:
+        return []
+
+    hits = []
+    for doc_text, meta, dist in zip(
+        results["documents"][0], results["metadatas"][0], results["distances"][0]
+    ):
+        hits.append(
+            {
+                "document_id": meta["document_id"],
+                "chunk_index": meta["chunk_index"],
+                "text": doc_text,
+                "score": round(1 - dist, 3),
+            }
+        )
+    return hits

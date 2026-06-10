@@ -25,7 +25,8 @@ def build_prompt(message, rag_context, history=None):
     prompt_items = []
     
     if rag_context:
-        prompt_items.append(("system", f"Use the following context to answer:\n{rag_context}"))
+        safe_context = rag_context.replace("{", "{{").replace("}", "}}")
+        prompt_items.append(("system", f"Use the following context to answer:\n{safe_context}"))
     else:
         prompt_items.append(("system", "You are a helpful assistant."))
 
