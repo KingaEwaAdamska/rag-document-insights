@@ -25,7 +25,9 @@ from app.tasks.documents import (
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
-UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "data/uploads"))
+BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
+
+UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", BACKEND_DIR / "data" / "uploads"))
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}
