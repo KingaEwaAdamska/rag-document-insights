@@ -21,6 +21,10 @@ services:
       - CHROMA_PORT=8001
     volumes:
       - app_data:/data
+      - model_cache:/root/.cache/huggingface
+    depends_on:
+      - redis
+      - chromadb
     restart: unless-stopped
 
   redis:
@@ -40,8 +44,10 @@ services:
       - CHROMA_PORT=8001
     volumes:
       - app_data:/data
+      - model_cache:/root/.cache/huggingface
     depends_on:
       - redis
+      - chromadb
     restart: unless-stopped
 
   chromadb:
@@ -53,3 +59,4 @@ services:
 volumes:
   app_data:
   chroma_data:
+  model_cache:
