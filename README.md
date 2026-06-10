@@ -47,6 +47,18 @@ npm run dev               # runs on http://localhost:5173
 
 Both must be running at the same time.
 
+## Run with Docker
+
+```bash
+cp .env.example .env
+# edit .env — generate SECRET_KEY with:
+# python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+
+docker compose up --build
+```
+
+App: `http://localhost`
+
 ## Migrations
 
 ```bash
