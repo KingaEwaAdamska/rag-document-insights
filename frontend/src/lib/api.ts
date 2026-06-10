@@ -40,6 +40,11 @@ export interface Document {
   updated_at: string;
 }
 
+export interface ReindexResponse {
+  enqueued: string[];
+  skipped: string[];
+}
+
 export interface ChatRequest {
   message: string;
   provider_id?: string;
@@ -138,6 +143,14 @@ export const api = {
       return data;
     },
     list: () => request<Document[]>('/api/v1/documents'),
+    get: (id: string) => request<Document>(`/api/v1/documents/${id}`),
     delete: (id: string) => request<void>(`/api/v1/documents/${id}`, { method: 'DELETE' }),
+    reindex: (id: string) =>
+      request<Document>(`/api/v1/documents/${id}/reindex`, { method: 'POST' }),
+    reindexStale: () =>
+      request<ReindexResponse>('/api/v1/documents/reindex', {
+        method: 'POST',
+        body: JSON.stringify({ document_ids: null }),
+      }),
   },
 };

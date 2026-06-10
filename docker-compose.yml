@@ -18,7 +18,7 @@ services:
       - UPLOAD_DIR=/data/uploads
       - REDIS_URL=redis://redis:6379/0
       - CHROMA_HOST=chromadb
-      - CHROMA_PORT=8001
+      - CHROMA_PORT=8000
     volumes:
       - app_data:/data
       - model_cache:/root/.cache/huggingface
@@ -29,6 +29,8 @@ services:
 
   redis:
     image: redis:7-alpine
+    ports:
+      - "6379:6379"
     restart: unless-stopped
 
   celery_worker:
@@ -41,7 +43,7 @@ services:
       - UPLOAD_DIR=/data/uploads
       - REDIS_URL=redis://redis:6379/0
       - CHROMA_HOST=chromadb
-      - CHROMA_PORT=8001
+      - CHROMA_PORT=8000
     volumes:
       - app_data:/data
       - model_cache:/root/.cache/huggingface
@@ -51,7 +53,9 @@ services:
     restart: unless-stopped
 
   chromadb:
-    image: chromadb/chroma:latest
+    image: chromadb/chroma:0.5.23
+    ports:
+      - "8000:8000"
     volumes:
       - chroma_data:/chroma/chroma
     restart: unless-stopped

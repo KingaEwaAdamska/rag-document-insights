@@ -1,5 +1,37 @@
 from pathlib import Path
 
+_SIGNATURES: dict[bytes, tuple[str, str]] = {
+    b"%PDF": (".pdf", "application/pdf"),
+    b"PK\x03\x04": (
+        ".docx",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ),
+}
+
+_TEXT_MIME_TYPES = {".txt": "text/plain", ".md": "text/markdown"}
+
+
+def detect_mime_type(file_path: str | Path) -> str | None:
+    path = Path(file_path)
+    extension = path.suffix.lower()
+
+    with open(path, "rb") as f:
+        header = f.read(8)
+
+    for signature, (expected_extension, mime_type) in _SIGNATURES.items():
+        if header.startswith(signature):
+            return mime_type if extension == expected_extension else None
+
+    if extension in _TEXT_MIME_TYPES:
+        try:
+            with open(path, encoding="utf-8") as f:
+                f.read(4096)
+        except UnicodeDecodeError:
+            return None
+        return _TEXT_MIME_TYPES[extension]
+
+    return None
+
 
 def _extract_pdf(file_path: str) -> str:
     from pypdf import PdfReader

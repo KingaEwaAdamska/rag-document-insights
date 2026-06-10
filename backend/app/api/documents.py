@@ -1,3 +1,4 @@
+import os
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,6 +16,7 @@ from app.schemas.document import (
     ReindexRequest,
     ReindexResponse,
 )
+from app.services.document_extraction import detect_mime_type
 from app.tasks.documents import (
     delete_document_task,
     index_document_task,
@@ -23,8 +25,10 @@ from app.tasks.documents import (
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
-UPLOAD_DIR = Path("data/uploads")
+UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "data/uploads"))
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}
 
 
 @router.get("", response_model=list[DocumentResponse])
@@ -60,28 +64,39 @@ async def create_document(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
+    extension = Path(file.filename or "").suffix.lower()
+    if extension not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=415,
+            detail=f"Unsupported file type: {extension or 'unknown'}",
+        )
+
     stored_name = f"{uuid.uuid4()}_{file.filename}"
     file_path = UPLOAD_DIR / stored_name
 
     try:
-        # Przenosimy blokującą operację zapisu do osobnego wątku
         file_size = await run_in_threadpool(_save_file, file.file, file_path)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to save file: {str(e)}",
+
+        mime_type = detect_mime_type(file_path)
+        if mime_type is None:
+            raise HTTPException(
+                status_code=415,
+                detail="File content does not match its extension",
+            )
+
+        doc = Document(
+            original_filename=file.filename,
+            stored_filename=stored_name,
+            file_path=str(file_path),
+            file_size=file_size,
+            mime_type=mime_type,
         )
+        db.add(doc)
+        db.commit()
+    except Exception:
+        file_path.unlink(missing_ok=True)
+        raise
 
-    doc = Document(
-        original_filename=file.filename,
-        stored_filename=stored_name,
-        file_path=str(file_path),
-        file_size=file_size,
-        mime_type=file.content_type,
-    )
-
-    db.add(doc)
-    db.commit()
     db.refresh(doc)
 
     index_document_task.delay(doc.id)

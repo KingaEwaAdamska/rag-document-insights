@@ -3,7 +3,7 @@ import os
 from app.services.chunking import CHUNK_STRATEGY
 
 CHROMA_HOST = os.getenv("CHROMA_HOST", "localhost")
-CHROMA_PORT = int(os.getenv("CHROMA_PORT", "8001"))
+CHROMA_PORT = int(os.getenv("CHROMA_PORT", "8000"))
 COLLECTION_NAME = "documents"
 
 _client = None
