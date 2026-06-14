@@ -1,4 +1,9 @@
-from app.services.provider_resolver import validate_provider, LLMProviderConfig, build_llm, RuntimeProvider
+from app.services.provider_resolver import (
+    validate_provider,
+    LLMProviderConfig,
+    build_llm,
+    RuntimeProvider,
+)
 from app.models.llm_provider import LLMProvider
 
 
@@ -25,7 +30,7 @@ def test_build_llm_gemini_logic():
     from langchain_google_genai import ChatGoogleGenerativeAI
 
     assert isinstance(llm, ChatGoogleGenerativeAI)
-    assert llm.model == "gemini-pro"
+    assert llm.model == "models/gemini-pro"
 
 
 def test_build_llm_ollama_logic():
