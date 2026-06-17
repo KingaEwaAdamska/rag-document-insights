@@ -1,3 +1,4 @@
+import os
 from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage, SystemMessage, ToolMessage
 
 from app.services.llm import extract_text_content
@@ -5,6 +6,7 @@ from app.services.provider_resolver import build_llm
 from app.services.tools import build_tools
 
 MAX_ITERATIONS = 5
+CHAT_HISTORY_LIMIT = int(os.environ.get("CHAT_HISTORY_LIMIT", 20))
 
 AGENT_SYSTEM_PROMPT = (
     "You are a helpful assistant for the user's personal document knowledge base. "
@@ -24,7 +26,8 @@ AGENT_SYSTEM_PROMPT = (
 def _build_messages(message: str, history=None):
     messages = [SystemMessage(content=AGENT_SYSTEM_PROMPT)]
     if history:
-        for m in history:
+        limited_history = history[-CHAT_HISTORY_LIMIT:]
+        for m in limited_history:
             if m.role == "user":
                 messages.append(HumanMessage(content=m.content))
             else:
