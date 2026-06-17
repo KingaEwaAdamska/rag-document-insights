@@ -115,7 +115,7 @@ def build_tools(db: Session):
                 "text": h["text"],
                 "score": h["score"],
             })
-            context_parts.append(f"[{document_name}, chunk {h['chunk_index']}]\n{h['text']}")
+            context_parts.append(f"[{document_name} (id: {h['document_id']}), chunk {h['chunk_index']}]\n{h['text']}")
         
         retrieved_chunks.extend(chunks)
         return "\n\n---\n\n".join(context_parts)
@@ -167,7 +167,7 @@ def build_tools(db: Session):
                 "text": h["text"],
                 "score": h["score"],
             })
-            context_parts.append(f"[{document_name}, chunk {h['chunk_index']}]\n{h['text']}")
+            context_parts.append(f"[{document_name} (id: {h['document_id']}), chunk {h['chunk_index']}]\n{h['text']}")
         
         retrieved_chunks.extend(chunks)
         return "\n\n---\n\n".join(context_parts)

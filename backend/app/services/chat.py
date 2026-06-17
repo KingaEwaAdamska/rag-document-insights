@@ -4,46 +4,6 @@ from app.services.agent import run_agent
 from app.models.chat import Conversation, Message
 
 
-def build_components(message: str, content: str):
-    text = message.lower()
-    components = []
-
-    if "code" in text:
-        components.append(
-            {
-                "type": "code_block",
-                "language": "python",
-                "code": content,
-            }
-        )
-
-    elif "action" in text:
-        components.append(
-            {
-                "type": "action_buttons",
-                "buttons": [
-                    {"label": "Run analysis", "primary": True},
-                    {"label": "Export"},
-                    {"label": "Save"},
-                ],
-            }
-        )
-
-    else:
-        components.append(
-            {
-                "type": "suggestion_chips",
-                "chips": [
-                    "Explain more",
-                    "Give example",
-                    "Show docs",
-                ],
-            }
-        )
-
-    return components
-
-
 def build_retrieval_components(chunks: list[dict]):
     if not chunks:
         return []
@@ -108,8 +68,7 @@ async def stream_chat(req, db, cfg):
         elif event["type"] == "retrieved_chunks":
             retrieved_chunks = event["chunks"]
 
-    components = build_components(req.message, full_content)
-    components.extend(build_retrieval_components(retrieved_chunks))
+    components = build_retrieval_components(retrieved_chunks)
     components.extend(persisted_tool_calls)
 
     # Save assistant message

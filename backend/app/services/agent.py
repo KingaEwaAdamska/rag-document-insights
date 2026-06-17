@@ -36,12 +36,9 @@ def _build_messages(message: str, history=None):
     return messages
 
 
-def _summarize_result(tool_name: str, result: str) -> str:
+def _summarize_result(tool_name: str, result: str, chunks_added: int = 0) -> str:
     if tool_name in ("search_documents", "keyword_search", "search_documents_filtered"):
-        if "No matching" in result or "No documents found" in result:
-            return "No results found"
-        n = result.count("---") + 1
-        return f"Found {n} result(s)"
+        return f"Found {chunks_added} chunk(s)" if chunks_added else "No results found"
     if tool_name == "list_documents":
         if result.startswith("No documents"):
             return "No documents indexed"
@@ -100,8 +97,10 @@ async def run_agent(runtime, message: str, db, history=None):
             try:
                 if tool_fn is None:
                     raise ValueError(f"Unknown tool: {call['name']}")
+                chunks_before = len(retrieved_chunks)
                 result = tool_fn.invoke(call["args"])
-                summary = _summarize_result(call["name"], result)
+                chunks_added = len(retrieved_chunks) - chunks_before
+                summary = _summarize_result(call["name"], result, chunks_added=chunks_added)
                 yield {
                     "type": "tool_call",
                     "id": call["id"],
