@@ -19,7 +19,10 @@ AGENT_SYSTEM_PROMPT = (
     "Use get_document_chunk if a search excerpt is truncated and you need more context. "
     "Use get_document_metadata to find out properties of a document like its size, type, or upload date. "
     "If documents don't contain relevant information, say so and answer from your own "
-    "knowledge if possible. Do not call tools when they are clearly unnecessary."
+    "knowledge if possible. Do not call tools when they are clearly unnecessary. "
+    "After answering a question that involved searching documents, you should generally call "
+    "suggest_followups with 2-3 short follow-up questions the user might want to ask next. "
+    "Skip it only when the answer is a dead end or the question was trivial."
 )
 
 
@@ -62,7 +65,7 @@ async def run_agent(runtime, message: str, db, history=None):
        "args": {...}, "result_summary": "..."}   (result_summary only on done/error)
       {"type": "retrieved_chunks", "chunks": [...]}   -- always the last event
     """
-    tools, retrieved_chunks = build_tools(db)
+    tools, retrieved_chunks, suggestion_chips = build_tools(db)
     llm = build_llm(runtime).bind_tools(tools)
     tools_by_name = {t.name: t for t in tools}
 
@@ -122,3 +125,5 @@ async def run_agent(runtime, message: str, db, history=None):
                 messages.append(ToolMessage(content=f"Error: {e}", tool_call_id=call["id"]))
 
     yield {"type": "retrieved_chunks", "chunks": retrieved_chunks}
+    if suggestion_chips:
+        yield {"type": "suggestion_chips", "chips": suggestion_chips}
