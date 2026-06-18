@@ -11,9 +11,10 @@
    underlying issue (e.g. corrupt file, empty text extracted from a scanned PDF) and
    hit **Reindex**.
 
-Each document tracks its own chunk size/overlap. If you change the global chunking
-defaults later, already-indexed documents are marked **stale** — reindex them to pick
-up the new settings.
+Each document records the chunk size/overlap it was indexed with. These come from
+the `DEFAULT_CHUNK_SIZE`/`DEFAULT_CHUNK_OVERLAP` env vars — there's no settings page
+to change them per document yet. The `is_stale` flag exists in the data model for a
+future "reindex after changing chunking" flow, but nothing currently sets it.
 
 ## Chatting
 
@@ -33,9 +34,10 @@ up the new settings.
 1. Open the **Providers** page.
 2. Add a provider: name, provider type, model, API key, and optionally a custom base
    URL (for OpenAI-compatible endpoints).
-3. New providers are active by default. Use **toggle active** to disable one or
-   re-enable it — re-enabling tests the connection first and reports a clear error
-   (invalid key, model not found, can't connect) if it fails.
+3. New providers start **inactive** — adding one doesn't make it usable yet. Use
+   **toggle active** to activate it; this tests the connection first and reports a
+   clear error (invalid key, model not found, can't connect) instead of activating
+   a broken config. Toggling an active provider back off doesn't re-test anything.
 4. Only active providers are selectable in the chat page's provider picker.
 
 ## Known limitations

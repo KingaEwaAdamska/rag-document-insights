@@ -31,12 +31,14 @@ Routes never touch the database or external APIs directly — they call into
    bytes (`app/services/document_extraction.detect_mime_type`), a `Document` row is
    created with status `pending`, and a Celery task is queued.
 2. `app/tasks/documents.py` extracts text, splits it into chunks
-   (`app/services/chunking.py`, using the document's own `chunk_size`/`chunk_overlap`,
-   defaulting from env vars), embeds them (OpenAI), and writes them to ChromaDB.
-   `Document.status` moves to `indexing` then `indexed` (or `failed` with
-   `error_message` set).
-3. Changing chunk settings or re-uploading marks a document `is_stale`; reindexing
-   re-runs step 2.
+   (`app/services/chunking.py`, using `DEFAULT_CHUNK_SIZE`/`DEFAULT_CHUNK_OVERLAP`
+   env vars — there's no per-document override or settings UI), embeds them
+   (OpenAI), and writes them to ChromaDB. `Document.status` moves to `indexing` then
+   `indexed` (or `failed` with `error_message` set). The chunk size/overlap used are
+   recorded on the row afterward, for reference.
+3. `Document.is_stale` exists for a planned "settings changed, please reindex" flow
+   and is checked by the bulk reindex endpoint, but nothing currently sets it to
+   `True` — reindexing today is always a manual, explicit action per document.
 
 ## Chat request lifecycle
 

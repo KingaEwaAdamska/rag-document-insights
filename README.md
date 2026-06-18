@@ -17,7 +17,8 @@ get answers grounded in your files.
   (semantic search, keyword search, filtered search, chunk lookup)
 - Follow-up question suggestions after document-grounded answers
 - Multiple LLM providers, switchable per chat (OpenAI-compatible APIs)
-- Configurable chunk size/overlap per document, with stale/reindex tracking
+- Chunk size/overlap recorded per document (set via `DEFAULT_CHUNK_SIZE`/
+  `DEFAULT_CHUNK_OVERLAP` env vars — no settings UI for this yet)
 - Encrypted provider API keys at rest (Fernet)
 
 ## Stack
